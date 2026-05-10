@@ -102,34 +102,47 @@
   .stats { font-size: 14px; color: #b0c4b0; margin-bottom: 16px; }
   #mobile-controls {
     position: absolute;
-    bottom: 16px;
+    bottom: 12px;
     left: 50%;
     transform: translateX(-50%);
     display: none;
     z-index: 50;
-    pointer-events: auto;
+    touch-action: none;
   }
   .d-pad {
     display: grid;
-    grid-template-columns: repeat(3, 56px);
-    grid-template-rows: repeat(3, 56px);
-    gap: 4px;
+    grid-template-columns: repeat(3, 64px);
+    grid-template-rows: repeat(3, 64px);
+    gap: 6px;
   }
   .d-pad-btn {
-    width: 56px; height: 56px;
-    border: none;
-    border-radius: 12px;
-    background: rgba(255,255,255,0.15);
+    width: 64px; height: 64px;
+    border: 2px solid rgba(255,255,255,0.2);
+    border-radius: 16px;
+    background: rgba(255,255,255,0.12);
     color: #fff;
-    font-size: 24px;
+    font-size: 28px;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: auto;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+    user-select: none;
+    -webkit-user-select: none;
   }
-  .d-pad-btn:active { background: rgba(255,255,255,0.35); }
+  .d-pad-btn.pressed {
+    background: rgba(255,255,255,0.3);
+    border-color: rgba(255,255,255,0.5);
+    transform: scale(0.92);
+  }
   .d-pad-btn.empty { visibility: hidden; }
+  @media (pointer: coarse) {
+    #mobile-controls { display: block; }
+  }
+  @media (max-width: 768px) {
+    #mobile-controls { display: block; }
+  }
   #level-announce {
     position: absolute;
     top: 50%;
@@ -510,16 +523,35 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Mobile D-pad
+// Mobile D-pad — pointer events (works for both touch and mouse)
 document.querySelectorAll('.d-pad-btn[data-dir]').forEach(btn => {
   const dir = btn.dataset.dir;
   const dirs = {
     up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
     left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
   };
-  const handler = (e) => { e.preventDefault(); bunny.nextDir = dirs[dir]; };
-  btn.addEventListener('touchstart', handler, { passive: false });
-  btn.addEventListener('mousedown', handler);
+  const setDir = (e) => {
+    if (e) e.preventDefault();
+    bunny.nextDir = { ...dirs[dir] };
+    btn.classList.add('pressed');
+  };
+  const clearDir = (e) => {
+    if (e) e.preventDefault();
+    btn.classList.remove('pressed');
+  };
+  // pointerdown fires on both touch and mouse
+  btn.addEventListener('pointerdown', setDir, { passive: false });
+  btn.addEventListener('pointerleave', clearDir);
+  btn.addEventListener('pointerup', clearDir);
+  btn.addEventListener('pointercancel', clearDir);
+  // fallback: touch events
+  btn.addEventListener('touchstart', setDir, { passive: false });
+  btn.addEventListener('touchend', clearDir);
+  btn.addEventListener('touchcancel', clearDir);
+  // mouse fallback
+  btn.addEventListener('mousedown', setDir);
+  btn.addEventListener('mouseup', clearDir);
+  btn.addEventListener('mouseleave', clearDir);
 });
 
 // ---- MAP HELPERS ----
