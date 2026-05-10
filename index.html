@@ -102,47 +102,34 @@
   .stats { font-size: 14px; color: #b0c4b0; margin-bottom: 16px; }
   #mobile-controls {
     position: absolute;
-    bottom: 12px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
     display: none;
     z-index: 50;
-    touch-action: none;
+    pointer-events: auto;
   }
   .d-pad {
     display: grid;
-    grid-template-columns: repeat(3, 64px);
-    grid-template-rows: repeat(3, 64px);
-    gap: 6px;
+    grid-template-columns: repeat(3, 56px);
+    grid-template-rows: repeat(3, 56px);
+    gap: 4px;
   }
   .d-pad-btn {
-    width: 64px; height: 64px;
-    border: 2px solid rgba(255,255,255,0.2);
-    border-radius: 16px;
-    background: rgba(255,255,255,0.12);
+    width: 56px; height: 56px;
+    border: none;
+    border-radius: 12px;
+    background: rgba(255,255,255,0.15);
     color: #fff;
-    font-size: 28px;
+    font-size: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
     pointer-events: auto;
     -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-    user-select: none;
-    -webkit-user-select: none;
   }
-  .d-pad-btn.pressed {
-    background: rgba(255,255,255,0.3);
-    border-color: rgba(255,255,255,0.5);
-    transform: scale(0.92);
-  }
+  .d-pad-btn:active { background: rgba(255,255,255,0.35); }
   .d-pad-btn.empty { visibility: hidden; }
-  @media (pointer: coarse) {
-    #mobile-controls { display: block; }
-  }
-  @media (max-width: 768px) {
-    #mobile-controls { display: block; }
-  }
   #level-announce {
     position: absolute;
     top: 50%;
@@ -296,8 +283,8 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 9 },
     predators: [
-      { type: 'fox', col: 9, row: 7, color: '#d4700a', speed: 2.0 },
-      { type: 'hawk', col: 11, row: 7, color: '#8B4513', speed: 2.5 },
+      { type: 'fox', col: 9, row: 7, color: '#d4700a' },
+      { type: 'hawk', col: 11, row: 7, color: '#8B4513' },
     ],
     mushroomPositions: [{ col: 10, row: 5 }],
     heartPositions: [{ col: 10, row: 15 }],
@@ -333,9 +320,9 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 11 },
     predators: [
-      { type: 'fox', col: 3, row: 3, color: '#d4700a', speed: 2.0 },
-      { type: 'hawk', col: 17, row: 3, color: '#8B4513', speed: 2.5 },
-      { type: 'snake', col: 5, row: 15, color: '#4a8a3a', speed: 2.2 },
+      { type: 'fox', col: 3, row: 3, color: '#d4700a' },
+      { type: 'hawk', col: 17, row: 3, color: '#8B4513' },
+      { type: 'snake', col: 5, row: 15, color: '#4a8a3a' },
     ],
     mushroomPositions: [{ col: 3, row: 8 }, { col: 17, row: 8 }, { col: 10, row: 3 }],
     heartPositions: [{ col: 10, row: 17 }],
@@ -371,10 +358,10 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 10 },
     predators: [
-      { type: 'fox', col: 2, row: 2, color: '#d4700a', speed: 2.0 },
-      { type: 'hawk', col: 18, row: 2, color: '#8B4513', speed: 2.5 },
-      { type: 'snake', col: 2, row: 16, color: '#4a8a3a', speed: 2.2 },
-      { type: 'owl', col: 18, row: 16, color: '#5a3a6a', speed: 1.8 },
+      { type: 'fox', col: 2, row: 2, color: '#d4700a' },
+      { type: 'hawk', col: 18, row: 2, color: '#8B4513' },
+      { type: 'snake', col: 2, row: 16, color: '#4a8a3a' },
+      { type: 'owl', col: 18, row: 16, color: '#5a3a6a' },
     ],
     mushroomPositions: [{ col: 10, row: 5 }, { col: 10, row: 14 }],
     heartPositions: [{ col: 3, row: 15 }, { col: 17, row: 15 }],
@@ -410,10 +397,10 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 9 },
     predators: [
-      { type: 'fox', col: 3, row: 3, color: '#d4700a', speed: 2.0 },
-      { type: 'hawk', col: 17, row: 3, color: '#8B4513', speed: 2.5 },
-      { type: 'snake', col: 3, row: 15, color: '#4a8a3a', speed: 2.2 },
-      { type: 'owl', col: 17, row: 15, color: '#5a3a6a', speed: 1.8 },
+      { type: 'fox', col: 3, row: 3, color: '#d4700a' },
+      { type: 'hawk', col: 17, row: 3, color: '#8B4513' },
+      { type: 'snake', col: 3, row: 15, color: '#4a8a3a' },
+      { type: 'owl', col: 17, row: 15, color: '#5a3a6a' },
     ],
     mushroomPositions: [{ col: 10, row: 5 }, { col: 10, row: 14 }],
     heartPositions: [{ col: 5, row: 15 }, { col: 15, row: 15 }],
@@ -523,35 +510,16 @@ document.addEventListener('keydown', e => {
 });
 document.addEventListener('keyup', e => { keys[e.key] = false; });
 
-// Mobile D-pad — pointer events (works for both touch and mouse)
+// Mobile D-pad
 document.querySelectorAll('.d-pad-btn[data-dir]').forEach(btn => {
   const dir = btn.dataset.dir;
   const dirs = {
     up: { x: 0, y: -1 }, down: { x: 0, y: 1 },
     left: { x: -1, y: 0 }, right: { x: 1, y: 0 },
   };
-  const setDir = (e) => {
-    if (e) e.preventDefault();
-    bunny.nextDir = { ...dirs[dir] };
-    btn.classList.add('pressed');
-  };
-  const clearDir = (e) => {
-    if (e) e.preventDefault();
-    btn.classList.remove('pressed');
-  };
-  // pointerdown fires on both touch and mouse
-  btn.addEventListener('pointerdown', setDir, { passive: false });
-  btn.addEventListener('pointerleave', clearDir);
-  btn.addEventListener('pointerup', clearDir);
-  btn.addEventListener('pointercancel', clearDir);
-  // fallback: touch events
-  btn.addEventListener('touchstart', setDir, { passive: false });
-  btn.addEventListener('touchend', clearDir);
-  btn.addEventListener('touchcancel', clearDir);
-  // mouse fallback
-  btn.addEventListener('mousedown', setDir);
-  btn.addEventListener('mouseup', clearDir);
-  btn.addEventListener('mouseleave', clearDir);
+  const handler = (e) => { e.preventDefault(); bunny.nextDir = dirs[dir]; };
+  btn.addEventListener('touchstart', handler, { passive: false });
+  btn.addEventListener('mousedown', handler);
 });
 
 // ---- MAP HELPERS ----
@@ -703,60 +671,47 @@ function showLevelAnnounce() {
 
 // ---- BUNNY UPDATE ----
 function updateBunny() {
-  // Grid-aligned movement: snap to tile center when changing direction,
-  // but otherwise move freely between tiles.
-  const tileCol = Math.floor(bunny.x / TILE);
-  const tileRow = Math.floor(bunny.y / TILE);
-  const centerX = tileCol * TILE + TILE / 2;
-  const centerY = tileRow * TILE + TILE / 2;
-  const distFromCenter = Math.abs(bunny.x - centerX) + Math.abs(bunny.y - centerY);
-
-  // Try to change direction — only allow turns when near grid center
-  if ((bunny.nextDir.x !== bunny.dir.x || bunny.nextDir.y !== bunny.dir.y) &&
-      (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0)) {
-    if (distFromCenter < TILE * 0.5) {
-      // Snap to exact center before turning
-      bunny.x = centerX;
-      bunny.y = centerY;
-
-      const nextCol = tileCol + bunny.nextDir.x;
-      const nextRow = tileRow + bunny.nextDir.y;
-      if (isWalkable(nextCol, nextRow)) {
-        bunny.dir = { ...bunny.nextDir };
-      }
+  // Try to change direction
+  if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
+    const nextCol = Math.round(bunny.x / TILE);
+    const nextRow = Math.round(bunny.y / TILE);
+    // Check if we can move in the next direction
+    if (isWalkable(nextCol + bunny.nextDir.x, nextRow + bunny.nextDir.y)) {
+      bunny.dir = { ...bunny.nextDir };
     }
   }
 
   if (bunny.dir.x === 0 && bunny.dir.y === 0) return;
 
-  const speed = bunny.speed * (game.dt / 16.67);
+  const speed = bunny.speed * (game.dt / 16.67); // normalize to ~60fps
   const newX = bunny.x + bunny.dir.x * speed;
   const newY = bunny.y + bunny.dir.y * speed;
 
-  // Check wall collision — only block if the tile directly ahead is a wall
+  // Check wall collision with margin
+  const margin = bunny.radius * 0.55;
+  let canMoveX = true, canMoveY = true;
+
   if (bunny.dir.x !== 0) {
-    const edgeX = bunny.dir.x > 0 ? newX + bunny.radius : newX - bunny.radius;
-    const testCol = Math.floor(edgeX / TILE);
-    const centerRow = Math.floor(bunny.y / TILE);
-    if (isWalkable(testCol, centerRow)) {
-      bunny.x = newX;
-    }
+    const testCol = bunny.dir.x > 0 ? Math.floor((newX + margin) / TILE) : Math.floor((newX - margin) / TILE);
+    const topRow = Math.floor(bunny.y / TILE);
+    const botRow = Math.ceil(bunny.y / TILE);
+    canMoveX = isWalkable(testCol, topRow) && (topRow === botRow || isWalkable(testCol, botRow));
+  }
+  if (bunny.dir.y !== 0) {
+    const testRow = bunny.dir.y > 0 ? Math.floor((newY + margin) / TILE) : Math.floor((newY - margin) / TILE);
+    const leftCol = Math.floor(bunny.x / TILE);
+    const rightCol = Math.ceil(bunny.x / TILE);
+    canMoveY = isWalkable(leftCol, testRow) && (leftCol === rightCol || isWalkable(rightCol, testRow));
   }
 
-  if (bunny.dir.y !== 0) {
-    const edgeY = bunny.dir.y > 0 ? newY + bunny.radius : newY - bunny.radius;
-    const testRow = Math.floor(edgeY / TILE);
-    const centerCol = Math.floor(bunny.x / TILE);
-    if (isWalkable(centerCol, testRow)) {
-      bunny.y = newY;
-    }
-  }
+  if (canMoveX) bunny.x = newX;
+  if (canMoveY) bunny.y = newY;
 
   // Tunnel wrap
   if (bunny.x < -TILE/2) bunny.x = COLS * TILE + TILE/2;
   if (bunny.x > COLS * TILE + TILE/2) bunny.x = -TILE/2;
 
-  // Update grid position — use Math.round for stability
+  // Update grid position
   bunny.col = Math.round(bunny.x / TILE);
   bunny.row = Math.round(bunny.y / TILE);
 
@@ -796,7 +751,6 @@ function updatePredators() {
     }
 
     const speed = (pred.frightened ? pred.speed * 0.6 : pred.speed) * (game.dt / 16.67);
-    if (isNaN(speed) || speed <= 0) return; // Prevent NaN movement
     let targetX, targetY;
 
     if (pred.frightened) {
@@ -889,7 +843,7 @@ function updatePredators() {
           }
         }
 
-        pred.dir = { x: dist > 0 ? moveX / (speed || 1) : 0, y: dist > 0 ? moveY / (speed || 1) : 0 };
+        pred.dir = { x: dist > 0 ? moveX / speed : 0, y: dist > 0 ? moveY / speed : 0 };
       }
 
       // Tunnel wrap
@@ -919,7 +873,7 @@ function checkCollectibles() {
         spawnParticles(c.x, c.y, '#ff3366', 8);
       } else if (c.type === MUSHROOM) {
         game.score += 50;
-        playEatMushroom();
+        eatMushroom();
         bunny.invincible = true;
         game.powerTimer = game.powerDuration;
         spawnParticles(c.x, c.y, '#ff4444', 12);
