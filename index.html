@@ -702,18 +702,24 @@ function showLevelAnnounce() {
 }
 
 // ---- BUNNY UPDATE ----
-const TINY = 0.1; // minimum movement threshold to prevent micro-stutters
 function updateBunny() {
+  // Snap to tile center when near it to prevent micro-stutters
+  const tileCol = Math.floor(bunny.x / TILE);
+  const tileRow = Math.floor(bunny.y / TILE);
+  const centerX = tileCol * TILE + TILE / 2;
+  const centerY = tileRow * TILE + TILE / 2;
+  const distFromCenter = Math.abs(bunny.x - centerX) + Math.abs(bunny.y - centerY);
+  
+  // If bunny is very close to center, snap to it
+  if (distFromCenter < TILE * 0.3) {
+    bunny.x = centerX;
+    bunny.y = centerY;
+  }
+
   // Try to change direction — only allow turns when near grid center
   if ((bunny.nextDir.x !== bunny.dir.x || bunny.nextDir.y !== bunny.dir.y) &&
       (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0)) {
-    const tileCol = Math.floor(bunny.x / TILE);
-    const tileRow = Math.floor(bunny.y / TILE);
-    const centerX = tileCol * TILE + TILE / 2;
-    const centerY = tileRow * TILE + TILE / 2;
-    const distFromCenter = Math.abs(bunny.x - centerX) + Math.abs(bunny.y - centerY);
-    
-    if (distFromCenter < TILE * 0.6) {
+    if (distFromCenter < TILE * 0.5) {
       bunny.x = centerX;
       bunny.y = centerY;
         
@@ -731,7 +737,7 @@ function updateBunny() {
   const newX = bunny.x + bunny.dir.x * speed;
   const newY = bunny.y + bunny.dir.y * speed;
 
-  // Check wall collision
+  // Check wall collision — only block if the tile directly ahead is a wall
   if (bunny.dir.x !== 0) {
     const edgeX = bunny.dir.x > 0 ? newX + bunny.radius : newX - bunny.radius;
     const testCol = Math.floor(edgeX / TILE);
