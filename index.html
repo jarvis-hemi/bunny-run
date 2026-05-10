@@ -703,26 +703,22 @@ function showLevelAnnounce() {
 
 // ---- BUNNY UPDATE ----
 function updateBunny() {
-  // Snap to tile center when near it to prevent micro-stutters
+  // Grid-aligned movement: snap to tile center when changing direction,
+  // but otherwise move freely between tiles.
   const tileCol = Math.floor(bunny.x / TILE);
   const tileRow = Math.floor(bunny.y / TILE);
   const centerX = tileCol * TILE + TILE / 2;
   const centerY = tileRow * TILE + TILE / 2;
   const distFromCenter = Math.abs(bunny.x - centerX) + Math.abs(bunny.y - centerY);
-  
-  // If bunny is very close to center, snap to it
-  if (distFromCenter < TILE * 0.3) {
-    bunny.x = centerX;
-    bunny.y = centerY;
-  }
 
   // Try to change direction — only allow turns when near grid center
   if ((bunny.nextDir.x !== bunny.dir.x || bunny.nextDir.y !== bunny.dir.y) &&
       (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0)) {
     if (distFromCenter < TILE * 0.5) {
+      // Snap to exact center before turning
       bunny.x = centerX;
       bunny.y = centerY;
-        
+
       const nextCol = tileCol + bunny.nextDir.x;
       const nextRow = tileRow + bunny.nextDir.y;
       if (isWalkable(nextCol, nextRow)) {
