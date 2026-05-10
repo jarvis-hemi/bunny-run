@@ -703,49 +703,59 @@ function showLevelAnnounce() {
 
 // ---- BUNNY UPDATE ----
 function updateBunny() {
-  // Try to change direction
-  if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
-    const nextCol = Math.round(bunny.x / TILE);
-    const nextRow = Math.round(bunny.y / TILE);
-    // Check if we can move in the next direction
-    if (isWalkable(nextCol + bunny.nextDir.x, nextRow + bunny.nextDir.y)) {
-      bunny.dir = { ...bunny.nextDir };
+  // Try to change direction — only allow turns when near grid center
+  if ((bunny.nextDir.x !== bunny.dir.x || bunny.nextDir.y !== bunny.dir.y) &&
+      (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0)) {
+    const tileCol = Math.floor(bunny.x / TILE);
+    const tileRow = Math.floor(bunny.y / TILE);
+    const centerX = tileCol * TILE + TILE / 2;
+    const centerY = tileRow * TILE + TILE / 2;
+    const distFromCenter = Math.abs(bunny.x - centerX) + Math.abs(bunny.y - centerY);
+
+    if (distFromCenter < TILE * 0.55) {
+      bunny.x = centerX;
+      bunny.y = centerY;
+
+      const nextCol = tileCol + bunny.nextDir.x;
+      const nextRow = tileRow + bunny.nextDir.y;
+      if (isWalkable(nextCol, nextRow)) {
+        bunny.dir = { ...bunny.nextDir };
+      }
     }
   }
 
   if (bunny.dir.x === 0 && bunny.dir.y === 0) return;
 
-  const speed = bunny.speed * (game.dt / 16.67); // normalize to ~60fps
+  const speed = bunny.speed * (game.dt / 16.67);
   const newX = bunny.x + bunny.dir.x * speed;
   const newY = bunny.y + bunny.dir.y * speed;
 
-  // Check wall collision with margin
-  const margin = bunny.radius * 0.55;
-  let canMoveX = true, canMoveY = true;
-
+  // Check wall collision
   if (bunny.dir.x !== 0) {
-    const testCol = bunny.dir.x > 0 ? Math.floor((newX + margin) / TILE) : Math.floor((newX - margin) / TILE);
-    const topRow = Math.floor(bunny.y / TILE);
-    const botRow = Math.ceil(bunny.y / TILE);
-    canMoveX = isWalkable(testCol, topRow) && (topRow === botRow || isWalkable(testCol, botRow));
-  }
-  if (bunny.dir.y !== 0) {
-    const testRow = bunny.dir.y > 0 ? Math.floor((newY + margin) / TILE) : Math.floor((newY - margin) / TILE);
-    const leftCol = Math.floor(bunny.x / TILE);
-    const rightCol = Math.ceil(bunny.x / TILE);
-    canMoveY = isWalkable(leftCol, testRow) && (leftCol === rightCol || isWalkable(rightCol, testRow));
+    const edgeX = bunny.dir.x > 0 ? newX + bunny.radius : newX - bunny.radius;
+    const testCol = Math.floor(edgeX / TILE);
+    const centerRow = Math.floor(bunny.y / TILE);
+    if (isWalkable(testCol, centerRow)) {
+      bunny.x = newX;
+    }
   }
 
-  if (canMoveX) bunny.x = newX;
-  if (canMoveY) bunny.y = newY;
+  if (bunny.dir.y !== 0) {
+    const edgeY = bunny.dir.y > 0 ? newY + bunny.radius : newY - bunny.radius;
+    const testRow = Math.floor(edgeY / TILE);
+    const centerCol = Math.floor(bunny.x / TILE);
+    if (isWalkable(centerCol, testRow)) {
+      bunny.y = newY;
+    }
+  }
 
   // Tunnel wrap
   if (bunny.x < -TILE/2) bunny.x = COLS * TILE + TILE/2;
   if (bunny.x > COLS * TILE + TILE/2) bunny.x = -TILE/2;
 
   // Update grid position
-  bunny.col = Math.round(bunny.x / TILE);
-  bunny.row = Math.round(bunny.y / TILE);
+  bunny.col = Math.floor(bunny.x / TILE);
+  bunny.row = Math.floor(bunny.y / TILE);
 
   // Mouth animation
   bunny.mouthOpen += bunny.mouthDir * 0.15;
