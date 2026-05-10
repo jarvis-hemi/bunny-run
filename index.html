@@ -296,8 +296,8 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 9 },
     predators: [
-      { type: 'fox', col: 9, row: 7, color: '#d4700a' },
-      { type: 'hawk', col: 11, row: 7, color: '#8B4513' },
+      { type: 'fox', col: 9, row: 7, color: '#d4700a', speed: 2.0 },
+      { type: 'hawk', col: 11, row: 7, color: '#8B4513', speed: 2.5 },
     ],
     mushroomPositions: [{ col: 10, row: 5 }],
     heartPositions: [{ col: 10, row: 15 }],
@@ -333,9 +333,9 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 11 },
     predators: [
-      { type: 'fox', col: 3, row: 3, color: '#d4700a' },
-      { type: 'hawk', col: 17, row: 3, color: '#8B4513' },
-      { type: 'snake', col: 5, row: 15, color: '#4a8a3a' },
+      { type: 'fox', col: 3, row: 3, color: '#d4700a', speed: 2.0 },
+      { type: 'hawk', col: 17, row: 3, color: '#8B4513', speed: 2.5 },
+      { type: 'snake', col: 5, row: 15, color: '#4a8a3a', speed: 2.2 },
     ],
     mushroomPositions: [{ col: 3, row: 8 }, { col: 17, row: 8 }, { col: 10, row: 3 }],
     heartPositions: [{ col: 10, row: 17 }],
@@ -371,10 +371,10 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 10 },
     predators: [
-      { type: 'fox', col: 2, row: 2, color: '#d4700a' },
-      { type: 'hawk', col: 18, row: 2, color: '#8B4513' },
-      { type: 'snake', col: 2, row: 16, color: '#4a8a3a' },
-      { type: 'owl', col: 18, row: 16, color: '#5a3a6a' },
+      { type: 'fox', col: 2, row: 2, color: '#d4700a', speed: 2.0 },
+      { type: 'hawk', col: 18, row: 2, color: '#8B4513', speed: 2.5 },
+      { type: 'snake', col: 2, row: 16, color: '#4a8a3a', speed: 2.2 },
+      { type: 'owl', col: 18, row: 16, color: '#5a3a6a', speed: 1.8 },
     ],
     mushroomPositions: [{ col: 10, row: 5 }, { col: 10, row: 14 }],
     heartPositions: [{ col: 3, row: 15 }, { col: 17, row: 15 }],
@@ -410,10 +410,10 @@ const LEVELS = [
     ],
     bunnyStart: { col: 10, row: 9 },
     predators: [
-      { type: 'fox', col: 3, row: 3, color: '#d4700a' },
-      { type: 'hawk', col: 17, row: 3, color: '#8B4513' },
-      { type: 'snake', col: 3, row: 15, color: '#4a8a3a' },
-      { type: 'owl', col: 17, row: 15, color: '#5a3a6a' },
+      { type: 'fox', col: 3, row: 3, color: '#d4700a', speed: 2.0 },
+      { type: 'hawk', col: 17, row: 3, color: '#8B4513', speed: 2.5 },
+      { type: 'snake', col: 3, row: 15, color: '#4a8a3a', speed: 2.2 },
+      { type: 'owl', col: 17, row: 15, color: '#5a3a6a', speed: 1.8 },
     ],
     mushroomPositions: [{ col: 10, row: 5 }, { col: 10, row: 14 }],
     heartPositions: [{ col: 5, row: 15 }, { col: 15, row: 15 }],
@@ -702,6 +702,7 @@ function showLevelAnnounce() {
 }
 
 // ---- BUNNY UPDATE ----
+const TINY = 0.1; // minimum movement threshold to prevent micro-stutters
 function updateBunny() {
   // Try to change direction — only allow turns when near grid center
   if ((bunny.nextDir.x !== bunny.dir.x || bunny.nextDir.y !== bunny.dir.y) &&
@@ -711,11 +712,11 @@ function updateBunny() {
     const centerX = tileCol * TILE + TILE / 2;
     const centerY = tileRow * TILE + TILE / 2;
     const distFromCenter = Math.abs(bunny.x - centerX) + Math.abs(bunny.y - centerY);
-
-    if (distFromCenter < TILE * 0.55) {
+    
+    if (distFromCenter < TILE * 0.6) {
       bunny.x = centerX;
       bunny.y = centerY;
-
+        
       const nextCol = tileCol + bunny.nextDir.x;
       const nextRow = tileRow + bunny.nextDir.y;
       if (isWalkable(nextCol, nextRow)) {
@@ -753,9 +754,9 @@ function updateBunny() {
   if (bunny.x < -TILE/2) bunny.x = COLS * TILE + TILE/2;
   if (bunny.x > COLS * TILE + TILE/2) bunny.x = -TILE/2;
 
-  // Update grid position
-  bunny.col = Math.floor(bunny.x / TILE);
-  bunny.row = Math.floor(bunny.y / TILE);
+  // Update grid position — use Math.round for stability
+  bunny.col = Math.round(bunny.x / TILE);
+  bunny.row = Math.round(bunny.y / TILE);
 
   // Mouth animation
   bunny.mouthOpen += bunny.mouthDir * 0.15;
@@ -793,6 +794,7 @@ function updatePredators() {
     }
 
     const speed = (pred.frightened ? pred.speed * 0.6 : pred.speed) * (game.dt / 16.67);
+    if (isNaN(speed) || speed <= 0) return; // Prevent NaN movement
     let targetX, targetY;
 
     if (pred.frightened) {
@@ -885,7 +887,7 @@ function updatePredators() {
           }
         }
 
-        pred.dir = { x: dist > 0 ? moveX / speed : 0, y: dist > 0 ? moveY / speed : 0 };
+        pred.dir = { x: dist > 0 ? moveX / (speed || 1) : 0, y: dist > 0 ? moveY / (speed || 1) : 0 };
       }
 
       // Tunnel wrap
