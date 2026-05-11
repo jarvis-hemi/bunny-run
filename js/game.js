@@ -278,67 +278,21 @@ function showLevelAnnounce() {
 
 // ---- BUNNY UPDATE ----
 function updateBunny() {
-  const speed = bunny.speed * (game.dt / 16.67); // normalize to ~60fps
-
-  // Try to change direction — only allow turns near tile centers (classic Pac-Man style)
+  // Tile-based teleport movement — no physics, no collision
   if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
-    const currentCol = Math.floor(bunny.x / TILE);
-    const currentRow = Math.floor(bunny.y / TILE);
-    const tileCenterX = currentCol * TILE + TILE / 2;
-    const tileCenterY = currentRow * TILE + TILE / 2;
-    const distToCenter = Math.abs(bunny.x - tileCenterX) + Math.abs(bunny.y - tileCenterY);
+    const targetCol = bunny.col + bunny.nextDir.x;
+    const targetRow = bunny.row + bunny.nextDir.y;
 
-    // Only allow direction change when close to tile center (within 1/3 tile)
-    if (distToCenter < TILE / 3) {
-      // Check if we can move in the next direction
-      if (isWalkable(currentCol + bunny.nextDir.x, currentRow + bunny.nextDir.y)) {
-        bunny.dir = { ...bunny.nextDir };
-        // Snap to tile center for clean turns
-        bunny.x = tileCenterX;
-        bunny.y = tileCenterY;
-      }
+    // Only move if target tile is walkable
+    if (isWalkable(targetCol, targetRow)) {
+      bunny.col = targetCol;
+      bunny.row = targetRow;
+      bunny.x = bunny.col * TILE + TILE / 2;
+      bunny.y = bunny.row * TILE + TILE / 2;
+      bunny.dir = { ...bunny.nextDir };
+      bunny.nextDir = { x: 0, y: 0 }; // consume the input
     }
   }
-
-  if (bunny.dir.x === 0 && bunny.dir.y === 0) return;
-
-  const newX = bunny.x + bunny.dir.x * speed;
-  const newY = bunny.y + bunny.dir.y * speed;
-
-  // Check wall collision — test all tiles the bunny's body occupies at the new position
-  const bodyLeft = newX - bunny.radius;
-  const bodyRight = newX + bunny.radius;
-  const bodyTop = newY - bunny.radius;
-  const bodyBot = newY + bunny.radius;
-  const leftCol = Math.floor(bodyLeft / TILE);
-  const rightCol = Math.floor(bodyRight / TILE);
-  const topRow = Math.floor(bodyTop / TILE);
-  const botRow = Math.floor(bodyBot / TILE);
-  let canMoveX = true, canMoveY = true;
-
-  if (bunny.dir.x !== 0) {
-    // Check the leading-edge column(s) in the direction of movement
-    const leadCol = bunny.dir.x > 0 ? rightCol : leftCol;
-    canMoveX = isWalkable(leadCol, topRow);
-    if (topRow !== botRow) canMoveX = canMoveX && isWalkable(leadCol, botRow);
-  }
-  if (bunny.dir.y !== 0) {
-    // Check the leading-edge row(s) in the direction of movement
-    const leadRow = bunny.dir.y > 0 ? botRow : topRow;
-    canMoveY = isWalkable(leftCol, leadRow);
-    if (leftCol !== rightCol) canMoveY = canMoveY && isWalkable(rightCol, leadRow);
-  }
-
-  if (canMoveX) bunny.x = newX;
-  if (canMoveY) bunny.y = newY;
-
-  // Tunnel wrap
-  if (bunny.x < -TILE/2) bunny.x = COLS * TILE + TILE/2;
-  if (bunny.x > COLS * TILE + TILE/2) bunny.x = -TILE/2;
-
-  // Update grid position
-  bunny.col = Math.floor(bunny.x / TILE);
-  bunny.row = Math.floor(bunny.y / TILE);
 
   // Mouth animation
   bunny.mouthOpen += bunny.mouthDir * 0.15;
