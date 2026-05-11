@@ -280,8 +280,8 @@ function showLevelAnnounce() {
 function updateBunny() {
   // Try to change direction
   if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
-    const nextCol = Math.round(bunny.x / TILE);
-    const nextRow = Math.round(bunny.y / TILE);
+    const nextCol = Math.floor(bunny.x / TILE);
+    const nextRow = Math.floor(bunny.y / TILE);
     // Check if we can move in the next direction
     if (isWalkable(nextCol + bunny.nextDir.x, nextRow + bunny.nextDir.y)) {
       bunny.dir = { ...bunny.nextDir };
@@ -300,14 +300,14 @@ function updateBunny() {
 
   if (bunny.dir.x !== 0) {
     const testCol = bunny.dir.x > 0 ? Math.floor((newX + margin) / TILE) : Math.floor((newX - margin) / TILE);
-    const topRow = Math.floor(bunny.y / TILE);
-    const botRow = Math.ceil(bunny.y / TILE);
+    const topRow = Math.floor((bunny.y - bunny.radius) / TILE);
+    const botRow = Math.floor((bunny.y + bunny.radius) / TILE);
     canMoveX = isWalkable(testCol, topRow) && (topRow === botRow || isWalkable(testCol, botRow));
   }
   if (bunny.dir.y !== 0) {
     const testRow = bunny.dir.y > 0 ? Math.floor((newY + margin) / TILE) : Math.floor((newY - margin) / TILE);
-    const leftCol = Math.floor(bunny.x / TILE);
-    const rightCol = Math.ceil(bunny.x / TILE);
+    const leftCol = Math.floor((bunny.x - bunny.radius) / TILE);
+    const rightCol = Math.floor((bunny.x + bunny.radius) / TILE);
     canMoveY = isWalkable(leftCol, testRow) && (leftCol === rightCol || isWalkable(rightCol, testRow));
   }
 
@@ -1040,9 +1040,12 @@ function resizeCanvas() {
   const scale = Math.min(maxW / (COLS * TILE), maxH / (ROWS * TILE));
   canvas.width = COLS * TILE;
   canvas.height = ROWS * TILE;
-  canvas.style.width = Math.floor(COLS * TILE * scale) + 'px';
-  canvas.style.height = Math.floor(ROWS * TILE * scale) + 'px';
-  canvas.style.marginTop = Math.floor((window.innerHeight - 80 - canvas.height) / 2) + 'px';
+  const displayW = Math.floor(COLS * TILE * scale);
+  const displayH = Math.floor(ROWS * TILE * scale);
+  canvas.style.width = displayW + 'px';
+  canvas.style.height = displayH + 'px';
+  const marginTop = Math.max(0, Math.floor((window.innerHeight - 80 - displayH) / 2));
+  canvas.style.marginTop = marginTop + 'px';
 }
 
 window.addEventListener('resize', resizeCanvas);
