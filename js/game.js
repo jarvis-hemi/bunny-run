@@ -93,6 +93,15 @@ function levelComplete() {
 let keys = {};
 let touchDir = null;
 
+// Mobile D-pad detection — show if touch device, or always show as fallback
+function isTouchDevice() {
+  return 'ontouchstart' in window || navigator.maxTouchPoints > 0 || window.matchMedia('(pointer: coarse)').matches;
+}
+const mobileControls = document.getElementById('mobile-controls');
+if (isTouchDevice()) {
+  mobileControls.style.display = 'block';
+}
+
 document.addEventListener('keydown', e => {
   keys[e.key] = true;
   const keyMap = {
@@ -1046,6 +1055,7 @@ document.getElementById('btn-start').addEventListener('click', () => {
   game.levelStartTime = Date.now();
   document.getElementById('menu-screen').style.display = 'none';
   document.getElementById('hud').style.display = 'flex';
+  mobileControls.style.display = 'block';
   loadLevel(0);
   game.state = 'playing';
   resizeCanvas();
@@ -1066,6 +1076,7 @@ document.getElementById('btn-restart').addEventListener('click', () => {
   game.levelStartTime = Date.now();
   document.getElementById('gameover-screen').style.display = 'none';
   document.getElementById('hud').style.display = 'flex';
+  mobileControls.style.display = 'block';
   loadLevel(0);
   game.state = 'playing';
   resizeCanvas();
@@ -1074,6 +1085,7 @@ document.getElementById('btn-restart').addEventListener('click', () => {
 document.getElementById('btn-next').addEventListener('click', () => {
   initAudio();
   document.getElementById('level-screen').style.display = 'none';
+  mobileControls.style.display = 'block';
   loadLevel(game.level + 1);
   game.state = 'playing';
   game.levelStartTime = Date.now();
