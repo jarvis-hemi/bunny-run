@@ -229,7 +229,18 @@ function loadLevel(idx) {
     behaviorTimer: 0,
     swoopTimer: 0,
     circleAngle: Math.random() * Math.PI * 2,
+    startCol: p.col,
+    startRow: p.row,
+    moveTimer: 0,
+    path: [],
+    pathIndex: 0,
+    lastPathUpdate: 0,
+    pathUpdateInterval: 1000,
+    invincibleFlash: 0,
   }));
+
+  // Initialize predator movement system
+  initPredators();
 
   // Add mushrooms
   lvl.mushroomPositions.forEach(mp => {
@@ -320,136 +331,6 @@ function updateBunny() {
   }
 }
 
-// ---- PREDATOR AI ----
-function updatePredators() {
-  const lvl = LEVELS[game.level];
-
-  predators.forEach(pred => {
-    if (pred.eaten) {
-      pred.respawnTimer -= game.dt;
-      if (pred.respawnTimer <= 0) {
-        pred.eaten = false;
-        pred.frightened = false;
-        pred.x = pred.col * TILE + TILE / 2;
-        pred.y = pred.row * TILE + TILE / 2;
-        pred.dir = { x: 0, y: 0 };
-      }
-      return;
-    }
-
-    // Frightened timer
-    if (pred.frightened) {
-      pred.frightenedTimer -= game.dt;
-      if (pred.frightenedTimer <= 0) {
-        pred.frightened = false;
-      }
-    }
-
-    const speed = (pred.frightened ? pred.speed * 0.6 : pred.speed) * (game.dt / 16.67);
-    let targetX, targetY;
-
-    if (pred.frightened) {
-      // Run away from bunny
-      targetX = bunny.x;
-      targetY = bunny.y;
-    } else {
-      // Different behaviors per type
-      switch (pred.type) {
-        case 'fox':
-          // Direct chase
-          targetX = bunny.x;
-          targetY = bunny.y;
-          break;
-        case 'hawk':
-          // Swoop behavior
-          pred.behaviorTimer += game.dt;
-          if (pred.behaviorTimer > 3000) {
-            pred.behaviorTimer = 0;
-            pred.swoopTimer = 1500;
-          }
-          if (pred.swoopTimer > 0) {
-            pred.swoopTimer -= game.dt;
-            targetX = bunny.x;
-            targetY = bunny.y;
-          } else {
-            // Patrol
-            targetX = 5 * TILE + TILE/2;
-            targetY = 5 * TILE + TILE/2;
-          }
-          break;
-        case 'snake':
-          // Ambush - move along edges
-          pred.behaviorTimer += game.dt;
-          if (pred.behaviorTimer > 4000) {
-            pred.behaviorTimer = 0;
-            const dirs = [{ x: 1, y: 0 }, { x: -1, y: 0 }];
-            pred.dir = dirs[Math.floor(Math.random() * dirs.length)];
-          }
-          targetX = bunny.x;
-          targetY = bunny.y;
-          break;
-        case 'owl':
-          // Circle and swoop
-          pred.circleAngle += 0.02;
-          const cx = COLS * TILE / 2;
-          const cy = ROWS * TILE / 2;
-          const orbitR = Math.min(COLS, ROWS) * TILE * 0.35;
-          targetX = cx + Math.cos(pred.circleAngle) * orbitR;
-          targetY = cy + Math.sin(pred.circleAngle) * orbitR;
-          // Occasionally swoop
-          if (Math.random() < 0.005) {
-            targetX = bunny.x;
-            targetY = bunny.y;
-          }
-          break;
-      }
-    }
-
-     // Move towards target
-      const dx = targetX - pred.x;
-      const dy = targetY - pred.y;
-      const dist = Math.sqrt(dx * dx + dy * dy);
-
-      if (dist > 5) {
-        const moveX = (dx / dist) * speed;
-        const moveY = (dy / dist) * speed;
-
-        const nextCol = Math.round((pred.x + moveX) / TILE);
-        const nextRow = Math.round((pred.y + moveY) / TILE);
-
-        // Try straight movement first
-        if (isWalkable(nextCol, nextRow)) {
-          pred.x += moveX;
-          pred.y += moveY;
-        } else {
-          // Try moving along axes
-          const altX = Math.round((pred.x + moveX) / TILE);
-          const altY = Math.round(pred.y / TILE);
-          if (isWalkable(altX, altY)) {
-            pred.x += moveX;
-            pred.y = altY * TILE + TILE / 2;
-          } else {
-            const altX2 = Math.round(pred.x / TILE);
-            const altY2 = Math.round((pred.y + moveY) / TILE);
-            if (isWalkable(altX2, altY2)) {
-              pred.x = altX2 * TILE + TILE / 2;
-              pred.y += moveY;
-            }
-          }
-        }
-
-        pred.dir = { x: dist > 0 ? moveX / speed : 0, y: dist > 0 ? moveY / speed : 0 };
-      }
-
-      // Tunnel wrap
-      if (pred.x < -TILE/2) pred.x = COLS * TILE + TILE/2;
-      if (pred.x > COLS * TILE + TILE/2) pred.x = -TILE/2;
-
-    pred.col = Math.round(pred.x / TILE);
-    pred.row = Math.round(pred.y / TILE);
-  });
-}
-
 // ---- COLLISIONS ----
 function checkCollectibles() {
   for (let i = game.collectibles.length - 1; i >= 0; i--) {
@@ -498,8 +379,7 @@ function checkPredatorCollisions() {
         eatPredator();
         spawnParticles(pred.x, pred.y, '#ffff00', 15);
       } else {
-        // Lose life — but not during spawn invincibility
-        game.spawnTimer -= game.dt;
+        // Lose life — but not during spawn invincibility (handled in update)
         if (game.spawnTimer > 0) {
           // Still in spawn invincibility, don't lose life
           return;
@@ -809,118 +689,6 @@ function drawBunny() {
   ctx.restore();
 }
 
-function drawPredator(pred) {
-  if (pred.eaten) return;
-  const x = pred.x;
-  const y = pred.y;
-  const r = TILE * 0.4;
-  const t = game.time;
-
-  ctx.save();
-  ctx.translate(x, y);
-
-  if (pred.frightened) {
-    // Flash blue when frightened
-    const flash = Math.sin(t * 0.01) > 0;
-    ctx.fillStyle = flash ? '#6666ff' : '#8888ff';
-  } else {
-    ctx.fillStyle = pred.color;
-  }
-
-  // Body
-  ctx.beginPath();
-  ctx.arc(0, 0, r, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Eyes
-  const eyeColor = pred.frightened ? '#ffffff' : '#ff4444';
-  ctx.fillStyle = eyeColor;
-  ctx.beginPath();
-  ctx.arc(-r * 0.3, -r * 0.2, r * 0.2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(r * 0.3, -r * 0.2, r * 0.2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pupils
-  ctx.fillStyle = '#000';
-  ctx.beginPath();
-  ctx.arc(-r * 0.3, -r * 0.15, r * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(r * 0.3, -r * 0.15, r * 0.1, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Mouth
-  if (pred.frightened) {
-    ctx.strokeStyle = '#fff';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.arc(0, r * 0.2, r * 0.2, 0, Math.PI);
-    ctx.stroke();
-  } else {
-    ctx.fillStyle = '#000';
-    ctx.beginPath();
-    ctx.ellipse(0, r * 0.25, r * 0.15, r * 0.1, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-
-  // Type-specific features
-  if (pred.type === 'fox') {
-    // Fox ears
-    ctx.fillStyle = pred.frightened ? '#6666ff' : '#d4700a';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.5, -r * 0.7);
-    ctx.lineTo(-r * 0.7, -r * 1.3);
-    ctx.lineTo(-r * 0.1, -r * 0.8);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(r * 0.5, -r * 0.7);
-    ctx.lineTo(r * 0.7, -r * 1.3);
-    ctx.lineTo(r * 0.1, -r * 0.8);
-    ctx.fill();
-  } else if (pred.type === 'hawk') {
-    // Hawk beak
-    ctx.fillStyle = '#ffaa00';
-    ctx.beginPath();
-    ctx.moveTo(0, r * 0.1);
-    ctx.lineTo(-r * 0.15, r * 0.5);
-    ctx.lineTo(r * 0.15, r * 0.5);
-    ctx.fill();
-  } else if (pred.type === 'snake') {
-    // Snake tongue
-    const tongueOut = Math.sin(t * 0.008) > 0;
-    if (tongueOut) {
-      ctx.strokeStyle = '#ff2222';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.moveTo(0, r * 0.3);
-      ctx.lineTo(0, r * 0.7);
-      ctx.lineTo(-r * 0.15, r * 0.85);
-      ctx.stroke();
-      ctx.beginPath();
-      ctx.moveTo(0, r * 0.7);
-      ctx.lineTo(r * 0.15, r * 0.85);
-      ctx.stroke();
-    }
-  } else if (pred.type === 'owl') {
-    // Owl ear tufts
-    ctx.fillStyle = pred.frightened ? '#6666ff' : '#5a3a6a';
-    ctx.beginPath();
-    ctx.moveTo(-r * 0.6, -r * 0.5);
-    ctx.lineTo(-r * 0.8, -r * 1.2);
-    ctx.lineTo(-r * 0.3, -r * 0.7);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(r * 0.6, -r * 0.5);
-    ctx.lineTo(r * 0.8, -r * 1.2);
-    ctx.lineTo(r * 0.3, -r * 0.7);
-    ctx.fill();
-  }
-
-  ctx.restore();
-}
-
 function drawBackground() {
   const lvl = LEVELS[game.level];
   // Background
@@ -975,7 +743,7 @@ function update(dt) {
   game.dt = dt;
 
   updateBunny();
-  updatePredators();
+  updatePredators(game.dt);
   checkCollectibles();
   checkPredatorCollisions();
   updateParticles();
@@ -987,6 +755,11 @@ function update(dt) {
       bunny.invincible = false;
       game.powerTimer = 0;
     }
+  }
+
+  // Spawn invincibility timer
+  if (game.spawnTimer > 0) {
+    game.spawnTimer -= dt;
   }
 
   updateHUD();
@@ -1004,10 +777,6 @@ function draw() {
     drawBunny();
     drawParticles();
   }
-}
-
-function drawPredators() {
-  predators.forEach(p => drawPredator(p));
 }
 
 function gameLoop(timestamp) {

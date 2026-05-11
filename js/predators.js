@@ -10,7 +10,7 @@ function initPredators() {
     pred.path = [];
     pred.pathIndex = 0;
     pred.lastPathUpdate = 0;
-    pred.pathUpdateInterval = 1000; // recalculate path every 1 second
+    pred.pathUpdateInterval = 1000 + Math.random() * 500; // stagger path updates
   });
 }
 
@@ -62,16 +62,31 @@ function updatePredators(dt) {
         if (dx !== 0 || dy !== 0) {
           // Validate destination is walkable before committing
           if (isWalkable(nextTile.col, nextTile.row)) {
-            pred.col = nextTile.col;
-            pred.row = nextTile.row;
-            pred.x = pred.col * TILE + TILE / 2;
-            pred.y = pred.row * TILE + TILE / 2;
-            pred.pathIndex++;
+            // Extra safety: don't move onto the bunny's current position
+            const targetCol = Math.round(bunny.col);
+            const targetRow = Math.round(bunny.row);
+            if (nextTile.col === targetCol && nextTile.row === targetRow) {
+              // Bunny is here — skip this tile and recalculate
+              pred.pathIndex++;
+              if (pred.pathIndex >= pred.path.length) {
+                pred.path = calculatePath(pred);
+                pred.pathIndex = 0;
+              }
+            } else {
+              pred.col = nextTile.col;
+              pred.row = nextTile.row;
+              pred.x = pred.col * TILE + TILE / 2;
+              pred.y = pred.row * TILE + TILE / 2;
+              pred.pathIndex++;
+            }
           } else {
             // Path is stale or blocked — recalculate
             pred.path = calculatePath(pred);
             pred.pathIndex = 0;
           }
+        } else {
+          // Next tile is the current position — skip it
+          pred.pathIndex++;
         }
       }
     }
@@ -83,7 +98,35 @@ function updatePredators(dt) {
 }
 
 function calculatePath(pred) {
-  const goal = { col: bunny.col, row: bunny.row };
+  // Find the best adjacent tile to the bunny as the goal
+  const bunnyCol = Math.round(bunny.col);
+  const bunnyRow = Math.round(bunny.row);
+  const dirs = [{ x: 0, y: -1 }, { x: 0, y: 1 }, { x: -1, y: 0 }, { x: 1, y: 0 }];
+  
+  // Find all adjacent tiles with their path lengths
+  let bestPathLen = Infinity;
+  let bestTiles = [];
+  
+  for (const d of dirs) {
+    const adjCol = bunnyCol + d.x;
+    const adjRow = bunnyRow + d.y;
+    if (isWalkableGrid(adjCol, adjRow)) {
+      const path = aStar({ col: pred.col, row: pred.row }, { col: adjCol, row: adjRow });
+      if (path.length > 0 && path.length <= bestPathLen) {
+        if (path.length < bestPathLen) {
+          bestPathLen = path.length;
+          bestTiles = [{ col: adjCol, row: adjRow }];
+        } else {
+          bestTiles.push({ col: adjCol, row: adjRow });
+        }
+      }
+    }
+  }
+  
+  // Pick randomly among best tiles to avoid stacking
+  const goal = bestTiles.length > 0 
+    ? bestTiles[Math.floor(Math.random() * bestTiles.length)]
+    : { col: bunnyCol, row: bunnyRow };
 
   // Frightened mode: run away (find tile farthest from bunny)
   if (pred.frightened) {
