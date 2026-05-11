@@ -1,0 +1,150 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body {
+  width: 100%; height: 100%;
+  background: #0a1a0a;
+  overflow: hidden;
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  touch-action: none;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+#gameCanvas {
+  display: block;
+  margin: 0 auto;
+  image-rendering: auto;
+}
+#ui-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  z-index: 10;
+}
+#ui-overlay > * { pointer-events: auto; }
+#hud {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 16px;
+  background: linear-gradient(180deg, rgba(0,0,0,0.7) 0%, transparent 100%);
+  color: #fff;
+  font-size: 14px;
+  z-index: 20;
+}
+#hud .left, #hud .right { display: flex; align-items: center; gap: 16px; }
+#hud .score { font-size: 20px; font-weight: bold; color: #ffd700; text-shadow: 0 0 8px rgba(255,215,0,0.5); }
+#hud .level { font-size: 14px; color: #90ee90; }
+#hud .lives { font-size: 18px; }
+#hud .power-bar { width: 80px; height: 8px; background: rgba(255,255,255,0.2); border-radius: 4px; overflow: hidden; }
+#hud .power-fill { height: 100%; background: linear-gradient(90deg, #ff6b6b, #ffd700); border-radius: 4px; transition: width 0.1s; }
+#menu-screen, #gameover-screen, #level-screen {
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background: rgba(10, 30, 10, 0.92);
+  z-index: 100;
+  color: #fff;
+  text-align: center;
+}
+.screen-title {
+  font-size: 48px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.5), 2px 2px 0 #b8860b;
+  margin-bottom: 8px;
+}
+.screen-subtitle {
+  font-size: 16px;
+  color: #90ee90;
+  margin-bottom: 24px;
+}
+.screen-info {
+  font-size: 13px;
+  color: #b0c4b0;
+  max-width: 400px;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+.btn {
+  padding: 12px 32px;
+  font-size: 18px;
+  font-weight: bold;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  color: #fff;
+  background: linear-gradient(135deg, #2d8a2d, #1a6a1a);
+  box-shadow: 0 4px 0 #0f4f0f, 0 6px 12px rgba(0,0,0,0.3);
+  transition: transform 0.1s, box-shadow 0.1s;
+  margin: 6px;
+}
+.btn:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #0f4f0f, 0 8px 16px rgba(0,0,0,0.4); }
+.btn:active { transform: translateY(2px); box-shadow: 0 2px 0 #0f4f0f, 0 3px 6px rgba(0,0,0,0.3); }
+.btn-secondary {
+  background: linear-gradient(135deg, #4a6a4a, #2d4a2d);
+  box-shadow: 0 4px 0 #1a2f1a, 0 6px 12px rgba(0,0,0,0.3);
+}
+.btn-secondary:hover { box-shadow: 0 6px 0 #1a2f1a, 0 8px 16px rgba(0,0,0,0.4); }
+.btn-secondary:active { box-shadow: 0 2px 0 #1a2f1a; }
+#score-display { font-size: 28px; color: #ffd700; margin: 12px 0; }
+.stats { font-size: 14px; color: #b0c4b0; margin-bottom: 16px; }
+#mobile-controls {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: none;
+  z-index: 50;
+  pointer-events: auto;
+}
+.d-pad {
+  display: grid;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(3, 56px);
+  gap: 4px;
+}
+.d-pad-btn {
+  width: 56px; height: 56px;
+  border: none;
+  border-radius: 12px;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.d-pad-btn:active { background: rgba(255,255,255,0.35); }
+.d-pad-btn.empty { visibility: hidden; }
+#level-announce {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 36px;
+  font-weight: bold;
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255,215,0,0.8);
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+@media (max-width: 600px) {
+  .screen-title { font-size: 32px; }
+  .screen-subtitle { font-size: 14px; }
+  .screen-info { font-size: 12px; padding: 0 16px; }
+  .btn { padding: 10px 24px; font-size: 16px; }
+  #hud { font-size: 12px; padding: 6px 10px; }
+  #hud .score { font-size: 16px; }
+}
+@media (pointer: coarse) {
+  #mobile-controls { display: block; }
+}
