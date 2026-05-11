@@ -281,10 +281,15 @@ let moveTimer = 0;
 const MOVE_INTERVAL = 120; // ms per tile step
 
 function updateBunny() {
-  // Set direction from input
+  // Try to change direction — only commit if the target tile is walkable
   if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
-    bunny.dir = { ...bunny.nextDir };
-    bunny.nextDir = { x: 0, y: 0 };
+    const targetCol = bunny.col + bunny.nextDir.x;
+    const targetRow = bunny.row + bunny.nextDir.y;
+    if (isWalkable(targetCol, targetRow)) {
+      bunny.dir = { ...bunny.nextDir };
+      bunny.nextDir = { x: 0, y: 0 };
+    }
+    // If blocked, ignore input — bunny keeps going in current direction
   }
 
   // Continuous movement in current direction — teleports one tile every MOVE_INTERVAL ms
