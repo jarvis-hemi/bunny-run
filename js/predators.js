@@ -2,7 +2,8 @@
 // BUNNY RUN! - Predator AI & Movement
 // ============================================================
 
-const PREDATOR_MOVE_INTERVAL = 150; // ms per tile step (slower than player)
+const PREDATOR_MOVE_INTERVAL = 200; // ms per tile step (slower than player's 120ms)
+const PATH_RECALC_INTERVAL = 500; // recalculate path every 500ms
 
 function initPredators() {
   predators.forEach(pred => {
@@ -10,13 +11,11 @@ function initPredators() {
     pred.path = [];
     pred.pathIndex = 0;
     pred.lastPathUpdate = 0;
-    pred.pathUpdateInterval = 1000 + Math.random() * 500; // stagger path updates
+    pred.pathUpdateInterval = PATH_RECALC_INTERVAL + Math.random() * 200;
   });
 }
 
 function updatePredators(dt) {
-  const lvl = LEVELS[game.level];
-
   predators.forEach(pred => {
     if (pred.eaten) {
       pred.respawnTimer -= dt;
@@ -41,53 +40,45 @@ function updatePredators(dt) {
       }
     }
 
-    // Update path periodically
-    pred.lastPathUpdate += dt;
-    if (pred.lastPathUpdate >= pred.pathUpdateInterval) {
-      pred.lastPathUpdate = 0;
-      pred.path = calculatePath(pred);
-      pred.pathIndex = 0;
-    }
-
     // Move along path — tile-by-tile teleport (like the bunny)
     pred.moveTimer += dt;
     if (pred.moveTimer >= PREDATOR_MOVE_INTERVAL) {
       pred.moveTimer = 0;
 
-      if (pred.path.length > 0 && pred.pathIndex < pred.path.length) {
-        const nextTile = pred.path[pred.pathIndex];
-        const dx = nextTile.col - pred.col;
-        const dy = nextTile.row - pred.row;
+      // If path is empty or exhausted, calculate new one
+      if (pred.path.length === 0 || pred.pathIndex >= pred.path.length) {
+        pred.path = calculatePath(pred);
+        pred.pathIndex = 0;
+      }
 
-        if (dx !== 0 || dy !== 0) {
-          // Validate destination is walkable before committing
-          if (isWalkable(nextTile.col, nextTile.row)) {
-            // Extra safety: don't move onto the bunny's current position
-            const targetCol = Math.round(bunny.col);
-            const targetRow = Math.round(bunny.row);
-            if (nextTile.col === targetCol && nextTile.row === targetRow) {
-              // Bunny is here — skip this tile and recalculate
-              pred.pathIndex++;
-              if (pred.pathIndex >= pred.path.length) {
-                pred.path = calculatePath(pred);
-                pred.pathIndex = 0;
-              }
-            } else {
-              pred.col = nextTile.col;
-              pred.row = nextTile.row;
-              pred.x = pred.col * TILE + TILE / 2;
-              pred.y = pred.row * TILE + TILE / 2;
-              pred.pathIndex++;
-            }
-          } else {
-            // Path is stale or blocked — recalculate
-            pred.path = calculatePath(pred);
-            pred.pathIndex = 0;
-          }
+      // Move to the next tile in path (if we have one)
+      if (pred.path.length > 0 && pred.pathIndex < pred.path.length) {
+        const target = pred.path[pred.pathIndex];
+        // Safety: don't move onto the bunny's current position
+        const targetCol = Math.round(bunny.col);
+        const targetRow = Math.round(bunny.row);
+        if (target.col === targetCol && target.row === targetRow) {
+          // Bunny is here — skip this tile and try next
+          pred.pathIndex++;
         } else {
-          // Next tile is the current position — skip it
+          pred.col = target.col;
+          pred.row = target.row;
+          pred.x = pred.col * TILE + TILE / 2;
+          pred.y = pred.row * TILE + TILE / 2;
           pred.pathIndex++;
         }
+      }
+    }
+
+    // Recalculate path periodically (staggered to avoid all predators updating at once)
+    pred.lastPathUpdate += dt;
+    if (pred.lastPathUpdate >= pred.pathUpdateInterval) {
+      pred.lastPathUpdate = 0;
+      const newPath = calculatePath(pred);
+      // Only update if the new path is different from current
+      if (newPath.length !== pred.path.length || newPath[0]?.col !== pred.path[0]?.col || newPath[0]?.row !== pred.path[0]?.row) {
+        pred.path = newPath;
+        pred.pathIndex = 0;
       }
     }
 
