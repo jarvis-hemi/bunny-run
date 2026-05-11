@@ -277,20 +277,31 @@ function showLevelAnnounce() {
 }
 
 // ---- BUNNY UPDATE ----
-function updateBunny() {
-  // Tile-based teleport movement — no physics, no collision
-  if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
-    const targetCol = bunny.col + bunny.nextDir.x;
-    const targetRow = bunny.row + bunny.nextDir.y;
+let moveTimer = 0;
+const MOVE_INTERVAL = 120; // ms per tile step
 
-    // Only move if target tile is walkable
-    if (isWalkable(targetCol, targetRow)) {
-      bunny.col = targetCol;
-      bunny.row = targetRow;
-      bunny.x = bunny.col * TILE + TILE / 2;
-      bunny.y = bunny.row * TILE + TILE / 2;
-      bunny.dir = { ...bunny.nextDir };
-      bunny.nextDir = { x: 0, y: 0 }; // consume the input
+function updateBunny() {
+  // Set direction from input
+  if (bunny.nextDir.x !== 0 || bunny.nextDir.y !== 0) {
+    bunny.dir = { ...bunny.nextDir };
+    bunny.nextDir = { x: 0, y: 0 };
+  }
+
+  // Continuous movement in current direction — teleports one tile every MOVE_INTERVAL ms
+  if (bunny.dir.x !== 0 || bunny.dir.y !== 0) {
+    moveTimer += game.dt;
+    if (moveTimer >= MOVE_INTERVAL) {
+      moveTimer = 0;
+      const targetCol = bunny.col + bunny.dir.x;
+      const targetRow = bunny.row + bunny.dir.y;
+
+      if (isWalkable(targetCol, targetRow)) {
+        bunny.col = targetCol;
+        bunny.row = targetRow;
+        bunny.x = bunny.col * TILE + TILE / 2;
+        bunny.y = bunny.row * TILE + TILE / 2;
+      }
+      // If not walkable, stop moving (waits for next input)
     }
   }
 
